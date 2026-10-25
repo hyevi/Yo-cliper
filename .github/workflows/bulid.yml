@@ -1,1 +1,59 @@
+name: Build Tauri App
 
+on:
+  push:
+    branches: [ main ] # Запустится сразу после загрузки файлов
+  workflow_dispatch: # Или по кнопке вручную
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest' # Соберет .exe и .msi
+          - platform: 'ubuntu-22.04'   # Соберет .deb и .AppImage
+          - platform: 'macos-latest'   # Соберет .dmg (если нужно)
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- РАСПАКОВКА ТВОЕГО ZIP ---
+      - name: Unzip project
+        run: |
+          # Замени "my-app.zip" на имя твоего архива, если оно другое
+          unzip my-app.zip -d ./project-source
+
+      # --- УСТАНОВКА ЗАВИСИМОСТЕЙ ---
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      # --- СБОРКА ---
+      - name: Install frontend deps & Build
+        working-directory: ./project-source # Заходим в распакованную папку
+        run: |
+          npm install
+          npm run tauri build
+
+      # --- СОХРАНЕНИЕ РЕЗУЛЬТАТА ---
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.platform }}
+          # Ищем файлы установщиков в папке target
+          path: ./project-source/src-tauri/target/release/bundle/
