@@ -23,6 +23,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Unzip project
+        shell: bash
         run: |
           unzip .github/workflows/clipper-tauri.zip -d ./extracted_project
 
@@ -36,11 +37,13 @@ jobs:
 
       - name: Install Linux deps
         if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install frontend deps & Build
+        shell: bash
         run: |
           PROJECT_DIR=$(find ./extracted_project -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | head -n 1)
           echo "Проект найден в папке: $PROJECT_DIR"
@@ -50,11 +53,9 @@ jobs:
           npm install @tauri-apps/cli --save-dev
           npm pkg set scripts.tauri="tauri"
           
-          # Генерируем иконки (пропускаем, если уже есть)
-          if [ ! -d "src-tauri/icons" ]; then
-            mkdir -p src-tauri/icons
-            npx tauri icon -o src-tauri/icons
-          fi
+          # Просто генерируем иконки (если они есть, tauri icon их перезапишет, это нормально)
+          mkdir -p src-tauri/icons
+          npx tauri icon -o src-tauri/icons
           
           npm run build --if-present
           mkdir -p dist
