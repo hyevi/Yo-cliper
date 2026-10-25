@@ -40,27 +40,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Install frontend deps & Build
+      - name: Install frontend deps & Generate Icons
         run: |
-          # Ищем папку с проектом
           PROJECT_DIR=$(find ./extracted_project -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | head -n 1)
           echo "Проект найден в папке: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Устанавливаем зависимости (включая Tauri)
           npm install
           npm install @tauri-apps/cli --save-dev
-          
-          # Принудительно прописываем скрипт сборки
           npm pkg set scripts.tauri="tauri"
           
-          # Собираем фронтенд (создает папку dist)
-          npm run build --if-present
+          # Создаем папку и генерируем дефолтные иконки, чтобы Tauri не ругался
+          mkdir -p src-tauri/icons
+          npx tauri icon -o src-tauri/icons
           
-          # Если папка dist так и не появилась, создаем пустую заглушку
+          npm run build --if-present
           mkdir -p dist
           
-          # Запускаем сборку Tauri
           npm run tauri build
 
       - name: Upload Artifacts
