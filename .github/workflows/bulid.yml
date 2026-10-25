@@ -47,14 +47,20 @@ jobs:
           echo "Проект найден в папке: $PROJECT_DIR"
           cd "$PROJECT_DIR"
           
-          # Устанавливаем зависимости (включая Tauri, если его забыли добавить в package.json)
+          # Устанавливаем зависимости (включая Tauri)
           npm install
           npm install @tauri-apps/cli --save-dev
           
           # Принудительно прописываем скрипт сборки
           npm pkg set scripts.tauri="tauri"
           
-          # Запускаем сборку
+          # Собираем фронтенд (создает папку dist)
+          npm run build --if-present
+          
+          # Если папка dist так и не появилась, создаем пустую заглушку
+          mkdir -p dist
+          
+          # Запускаем сборку Tauri
           npm run tauri build
 
       - name: Upload Artifacts
