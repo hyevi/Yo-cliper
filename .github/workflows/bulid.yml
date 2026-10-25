@@ -42,17 +42,24 @@ jobs:
 
       - name: Install frontend deps & Build
         run: |
-          # Ищем, где именно лежит package.json, чтобы зайти в правильную папку
+          # Ищем папку с проектом
           PROJECT_DIR=$(find ./extracted_project -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \; | head -n 1)
           echo "Проект найден в папке: $PROJECT_DIR"
           cd "$PROJECT_DIR"
+          
+          # Устанавливаем зависимости (включая Tauri, если его забыли добавить в package.json)
           npm install
+          npm install @tauri-apps/cli --save-dev
+          
+          # Принудительно прописываем скрипт сборки
+          npm pkg set scripts.tauri="tauri"
+          
+          # Запускаем сборку
           npm run tauri build
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: installers-${{ matrix.platform }}
-          # Ищем файлы установщиков начиная от корня распакованной папки
           path: |
-            ./extracted_project/**/target/release/bundle/
+            ./extracted_project/**/src-tauri/target/release/bundle/
